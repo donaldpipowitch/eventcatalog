@@ -5,9 +5,7 @@ import { Domain, Event, Service } from '@eventcatalog/types';
 import { getEventElements, getServiceElements } from './GraphElements';
 import createGraphLayout, { calcCanvasHeight } from './GraphLayout';
 
-interface NodeGraphBuilderProps {
-  data: Event | Service | Domain;
-  source: 'event' | 'service' | 'domain';
+interface NodeGraphBuilderBaseProps {
   title?: string;
   subtitle?: string;
   rootNodeColor?: string;
@@ -22,10 +20,26 @@ interface NodeGraphBuilderProps {
   includeNodeIcons?: boolean;
 }
 
-interface NodeGraphProps extends NodeGraphBuilderProps {
+type NodeGraphBuilderProps = NodeGraphBuilderBaseProps &
+  (
+    | {
+        data: Event;
+        source: 'event';
+      }
+    | {
+        data: Service;
+        source: 'service';
+      }
+    | {
+        data: Domain;
+        source: 'domain';
+      }
+  );
+
+type NodeGraphProps = NodeGraphBuilderProps & {
   maxHeight?: number | string;
   renderWithBorder?: boolean;
-}
+};
 
 // NodeGraphBuilder component wrapping ReactFlow
 function NodeGraphBuilder({
@@ -112,6 +126,7 @@ function NodeGraphBuilder({
 
   return (
     <ReactFlow
+      key={source === 'event' ? `${source}-${data.name}-${data.version}-${data.domain}` : `${source}-${data.name}`}
       elements={elements}
       onLoad={onLoad}
       onElementClick={onElementClick}
@@ -137,50 +152,22 @@ function NodeGraphBuilder({
 }
 
 // NodeGraph wrapping NodeGraphBuilder Component
-function NodeGraph({
-  data,
-  source,
-  rootNodeColor,
-  maxHeight,
-  maxZoom,
-  fitView,
-  zoomOnScroll,
-  isAnimated,
-  isDraggable,
-  isHorizontal,
-  includeBackground,
-  renderWithBorder = true,
-  title,
-  subtitle,
-  includeEdgeLabels,
-  includeNodeIcons,
-}: NodeGraphProps) {
+function NodeGraph({ maxHeight, renderWithBorder = true, ...props }: NodeGraphProps) {
   // Set dynamic height of node graph
-  const dynamicHeight = maxHeight || calcCanvasHeight(data, source);
+  const dynamicHeight = maxHeight || calcCanvasHeight(props.data, props.source);
 
   const borderClasses = `border-dashed border-2 border-slate-300`;
-
+  console.log(
+    props.source === 'event'
+      ? `${props.source}-${props.data.name}-${props.data.version}-${props.data.domain}`
+      : `${props.source}-${props.data.name}`
+  );
   return (
     <div className={`node-graph w-full h-screen ${renderWithBorder ? borderClasses : ''}`} style={{ height: dynamicHeight }}>
       <ReactFlowProvider>
-        <NodeGraphBuilder
-          source={source}
-          data={data}
-          rootNodeColor={rootNodeColor}
-          maxZoom={maxZoom}
-          fitView={fitView}
-          includeBackground={includeBackground}
-          zoomOnScroll={zoomOnScroll}
-          isAnimated={isAnimated}
-          isDraggable={isDraggable}
-          isHorizontal={isHorizontal}
-          includeEdgeLabels={includeEdgeLabels}
-          includeNodeIcons={includeNodeIcons}
-          title={title}
-          subtitle={subtitle}
-        />
+        <NodeGraphBuilder {...props} />
       </ReactFlowProvider>
-      <Link href={`/visualiser?type=${source}&name=${data.name}`}>
+      <Link href={`/visualiser?type=${props.source}&name=${props.data.name}`}>
         <a className="block text-right  underline text-xs mt-4">Open in Visualiser &rarr;</a>
       </Link>
     </div>

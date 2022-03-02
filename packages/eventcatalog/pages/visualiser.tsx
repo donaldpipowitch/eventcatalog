@@ -35,16 +35,26 @@ function Graph({ events, services, domains }: PageProps) {
   const { name, type } = query;
 
   const dropdownValues = [
-    ...events.map((event) => ({ ...event, type: 'event', label: `Event: ${event.name}` })),
-    ...services.map((event) => ({ ...event, type: 'service', label: `Service: ${event.name}` })),
-    ...domains.map((event) => ({ ...event, type: 'domain', label: `Domain: ${event.name}` })),
+    ...events.map((event) => ({
+      ...event,
+      key: `event-${event.name}-${event.version}-${event.domain}`,
+      type: 'event',
+      label: `Event: ${event.name}`,
+    })),
+    ...services.map((event) => ({
+      ...event,
+      key: `service-${event.name}`,
+      type: 'service',
+      label: `Service: ${event.name}`,
+    })),
+    ...domains.map((event) => ({ ...event, key: `domain-${event.name}`, type: 'domain', label: `Domain: ${event.name}` })),
   ];
 
   const navItems = [
     { title: 'Domains', type: 'domain', data: listItemsToRender.domains },
     { title: 'Events', type: 'event', data: listItemsToRender.events },
     { title: 'Services', type: 'service', data: listItemsToRender.services },
-  ];
+  ] as const;
 
   const handleListItemSelection = (data: Event | Service, dataType: 'event' | 'service' | 'domain') => {
     setSelectedRootNode({ label: data.name, data, type: dataType });
@@ -107,7 +117,9 @@ function Graph({ events, services, domains }: PageProps) {
           >
             <option>Please select your event or service</option>
             {dropdownValues.map((item) => (
-              <option value={JSON.stringify({ label: item.name, data: item, type: item.type })}>{item.label}</option>
+              <option key={item.key} value={JSON.stringify({ label: item.name, data: item, type: item.type })}>
+                {item.label}
+              </option>
             ))}
           </select>
         </div>
@@ -131,8 +143,9 @@ function Graph({ events, services, domains }: PageProps) {
           </div>
 
           <div className="space-y-6">
-            {navItems.map((navItem: any) => (
+            {navItems.map((navItem) => (
               <SelectionGroup
+                key={navItem.type}
                 title={navItem.title}
                 filterBy={searchFilter}
                 data={navItem.data}
